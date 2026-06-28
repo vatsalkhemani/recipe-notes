@@ -66,9 +66,16 @@ export function RecipeEditor({
   const handleSave = async () => {
     setSaving(true);
     try {
+      // Commit any tag still sitting in the input that wasn't blurred/entered.
+      const pendingTag = tagInput.trim().toLowerCase();
+      const tags =
+        pendingTag && !draft.tags.includes(pendingTag)
+          ? [...draft.tags, pendingTag]
+          : draft.tags;
       const totalTimeMin = draft.totalTimeMin ?? deriveTotalTime(draft.steps);
       await onSave({
         ...draft,
+        tags,
         title: draft.title.trim() || "Untitled recipe",
         ingredients: draft.ingredients.map((i) => i.trim()).filter(Boolean),
         steps: draft.steps.filter((s) => s.text.trim()),
