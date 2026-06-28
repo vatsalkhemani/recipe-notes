@@ -10,13 +10,7 @@ import {
   serverTimestamp,
   Timestamp,
 } from "firebase/firestore";
-import {
-  ref,
-  uploadBytes,
-  getDownloadURL,
-  deleteObject,
-} from "firebase/storage";
-import { getDb, getStorageInstance } from "./firebase";
+import { getDb } from "./firebase";
 import { E2E_MODE } from "./e2e-mode";
 import type { Recipe, RecipeDraft } from "./types";
 
@@ -141,39 +135,37 @@ export async function deleteRecipe(uid: string, recipe: Recipe): Promise<void> {
     return;
   }
 
-  // Best-effort cleanup of stored media before removing the doc.
-  await Promise.allSettled(
-    [recipe.audioPath, recipe.coverPhotoPath]
-      .filter((p): p is string => !!p)
-      .map((p) => deleteObject(ref(getStorageInstance(), p)))
-  );
   await deleteDoc(doc(getDb(), "users", uid, "recipes", recipe.id));
 }
 
+async function uploadToCloudinary(file: Blob, filename: string): Promise<UploadResult> {
+  const form = new FormData();
+  form.append("file", file, filename);
+  const res = await fetch("/api/upload", { method: "POST", body: form });
+  if (!res.ok) {
+    const { error } = await res.json();
+    throw new Error(error || "Upload failed");
+  }
+  return res.json() as Promise<UploadResult>;
+}
+
 export async function uploadAudio(
-  uid: string,
+  _uid: string,
   blob: Blob,
   ext: string
 ): Promise<UploadResult> {
   if (E2E_MODE) {
     return { url: await blobToDataUrl(blob), path: `e2e/${crypto.randomUUID()}` };
   }
-  const path = `recipes/${uid}/audio/${crypto.randomUUID()}.${ext}`;
-  const storageRef = ref(getStorageInstance(), path);
-  await uploadBytes(storageRef, blob, { contentType: blob.type });
-  return { url: await getDownloadURL(storageRef), path };
+  return uploadToCloudinary(blob, `recording.${ext}`);
 }
 
 export async function uploadCover(
-  uid: string,
+  _uid: string,
   file: File
 ): Promise<UploadResult> {
   if (E2E_MODE) {
     return { url: await blobToDataUrl(file), path: `e2e/${crypto.randomUUID()}` };
   }
-  const ext = file.name.split(".").pop() || "jpg";
-  const path = `recipes/${uid}/covers/${crypto.randomUUID()}.${ext}`;
-  const storageRef = ref(getStorageInstance(), path);
-  await uploadBytes(storageRef, file, { contentType: file.type });
-  return { url: await getDownloadURL(storageRef), path };
+  return uploadToCloudinary(file, file.name);
 }

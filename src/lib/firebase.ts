@@ -6,7 +6,6 @@ import {
   persistentMultipleTabManager,
   type Firestore,
 } from "firebase/firestore";
-import { getStorage, type FirebaseStorage } from "firebase/storage";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -23,7 +22,6 @@ const firebaseConfig = {
 let appInstance: FirebaseApp | null = null;
 let authInstance: Auth | null = null;
 let dbInstance: Firestore | null = null;
-let storageInstance: FirebaseStorage | null = null;
 let providerInstance: GoogleAuthProvider | null = null;
 
 function getApp(): FirebaseApp {
@@ -56,7 +54,3 @@ export function getDb(): Firestore {
   return dbInstance;
 }
 
-export function getStorageInstance(): FirebaseStorage {
-  if (!storageInstance) storageInstance = getStorage(getApp());
-  return storageInstance;
-}
