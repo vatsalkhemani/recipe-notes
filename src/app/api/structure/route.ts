@@ -7,15 +7,18 @@ import {
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
-const DEFAULT_MODEL = "anthropic/claude-3.5-sonnet";
+// Structuring runs on Groq's OpenAI-compatible chat endpoint using an
+// open-source model. This reuses the same GROQ_API_KEY as transcription, so the
+// app needs only one provider key.
+const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
+const DEFAULT_MODEL = "llama-3.3-70b-versatile";
 
 // Accepts { transcript } JSON, returns a StructuredRecipe.
 export async function POST(request: Request) {
-  const apiKey = process.env.OPENROUTER_API_KEY;
+  const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) {
     return NextResponse.json(
-      { error: "Structuring is not configured (missing OPENROUTER_API_KEY)." },
+      { error: "Structuring is not configured (missing GROQ_API_KEY)." },
       { status: 500 }
     );
   }
@@ -32,10 +35,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "No transcript provided." }, { status: 400 });
   }
 
-  const model = process.env.OPENROUTER_MODEL || DEFAULT_MODEL;
+  const model = process.env.GROQ_MODEL || DEFAULT_MODEL;
 
   try {
-    const res = await fetch(OPENROUTER_URL, {
+    const res = await fetch(GROQ_URL, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,

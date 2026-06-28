@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Clock, User, Pencil, Trash2, Users } from "lucide-react";
+import { Clock, User, Pencil, Trash2, Users, ChefHat } from "lucide-react";
 import type { Recipe, RecipeDraft } from "@/lib/types";
 import { ModalSheet } from "./modal-sheet";
 import { RecipeEditor } from "./recipe-editor";
+import { CookMode } from "./cook-mode";
 
 interface RecipeDetailProps {
   recipe: Recipe;
@@ -22,6 +23,7 @@ export function RecipeDetail({
   onDelete,
 }: RecipeDetailProps) {
   const [editing, setEditing] = useState(false);
+  const [cooking, setCooking] = useState(false);
 
   const draft: RecipeDraft = {
     title: recipe.title,
@@ -45,6 +47,7 @@ export function RecipeDetail({
   };
 
   return (
+    <>
     <ModalSheet
       open={open}
       onClose={handleClose}
@@ -99,6 +102,15 @@ export function RecipeDetail({
               </span>
             )}
           </div>
+
+          {recipe.steps.length > 0 && (
+            <button
+              onClick={() => setCooking(true)}
+              className="flex items-center justify-center gap-2 rounded-xl bg-primary py-3 font-semibold text-primary-foreground transition hover:bg-primary-hover"
+            >
+              <ChefHat size={18} /> Start cooking
+            </button>
+          )}
 
           {recipe.audioUrl && (
             <div className="rounded-2xl bg-surface-muted p-3">
@@ -181,5 +193,9 @@ export function RecipeDetail({
         </div>
       )}
     </ModalSheet>
+    {cooking && (
+      <CookMode recipe={recipe} onClose={() => setCooking(false)} />
+    )}
+    </>
   );
 }

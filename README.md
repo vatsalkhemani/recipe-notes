@@ -7,7 +7,7 @@ and filter by tag. Built mobile-first as a PWA.
 
 ## Features
 - **Card grid** of dishes with emoji / cover photo, "learnt from", and total time
-- **Voice add flow**: record → AI transcribes (Groq Whisper) → structures into a recipe (LLM via OpenRouter) → review in an editor → save
+- **Voice add flow**: record → AI transcribes (Groq Whisper) → structures into a recipe (open-source LLM on Groq) → review in an editor → save
 - **Manual add** and full **edit mode** for every field
 - **Voice note playback** on each recipe
 - **Search** (title, person, ingredients) + **tag filters**
@@ -16,7 +16,8 @@ and filter by tag. Built mobile-first as a PWA.
 
 ## Tech
 Next.js (App Router) · React · Tailwind v4 · Firebase (Auth, Firestore, Storage)
-· framer-motion · lucide-react · Groq Whisper · OpenRouter.
+· framer-motion · lucide-react · Groq (Whisper for transcription + an
+open-source LLM for structuring).
 
 ## Setup
 
@@ -39,10 +40,14 @@ cp .env.local.example .env.local
    firebase deploy --only firestore:rules,storage
    ```
 
-### 3. AI keys
-- **Groq** (transcription): https://console.groq.com/keys → `GROQ_API_KEY`
-- **OpenRouter** (structuring): https://openrouter.ai/keys → `OPENROUTER_API_KEY`
-  (optional `OPENROUTER_MODEL`, default `anthropic/claude-3.5-sonnet`)
+### 3. AI key (just one)
+- **Groq**: https://console.groq.com/keys → `GROQ_API_KEY`
+  Powers both transcription (Whisper) and recipe structuring (open-source LLM).
+  Optional `GROQ_MODEL` overrides the structuring model (default
+  `llama-3.3-70b-versatile`; e.g. `qwen-2.5-32b` or `gemma2-9b-it`).
+
+  > Note: a Claude.ai / Claude Code subscription is **not** an API key — the
+  > Anthropic API is billed separately. Groq's free tier keeps this app free.
 
 ### 4. Run
 ```bash
@@ -54,8 +59,8 @@ npm run build    # production build
 ## Try it without any backend
 Set `NEXT_PUBLIC_E2E_MODE=true` in `.env.local`. The app signs you in as a fake
 local user and stores recipes (and audio as data URLs) in `localStorage`, so the
-whole UI works without Firebase. The AI "Make recipe" step still needs the Groq +
-OpenRouter keys; otherwise use **Type it manually**.
+whole UI works without Firebase. The AI "Make recipe" step still needs the Groq
+key; otherwise use **Type it manually**.
 
 ## Notes
 - AI keys are server-only and used solely inside the `src/app/api/*` route
