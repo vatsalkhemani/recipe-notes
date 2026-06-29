@@ -189,8 +189,13 @@ firestore.rules     ← "only you can read your own recipes"
 
 ---
 
+## Deployment
+
+See **[DEPLOY.md](DEPLOY.md)** — deploys to Vercel by importing the GitHub repo,
+pasting the env vars, and adding the Vercel domain to Firebase authorized domains.
+Every push to `main` auto-deploys.
+
 ## What's not built yet (possible next steps)
-- **Deployment** — Vercel (one command) + production Firebase project
 - **Share a recipe** — send a link or export as PDF/image
 - **Re-run AI** — re-structure an existing transcript if you want to regenerate
 - **Cook history** — track when you last made a dish
