@@ -9,6 +9,7 @@ import { RecipeDetail } from "./recipe-detail";
 import { AddRecipeFlow } from "./add-recipe-flow";
 import {
   subscribeRecipes,
+  createRecipe,
   updateRecipe,
   deleteRecipe,
 } from "@/lib/recipes";
@@ -61,6 +62,27 @@ export function AppShell() {
       tags.includes(tag) ? tags.filter((t) => t !== tag) : [...tags, tag]
     );
 
+  // Duplicate a recipe as a starting point for a similar one. The voice note and
+  // transcript belong to the original recording, so they're dropped on the copy.
+  const handleClone = async (recipe: Recipe) => {
+    if (!user) return;
+    await createRecipe(user.uid, {
+      title: `${recipe.title} (copy)`,
+      emoji: recipe.emoji,
+      learntFrom: recipe.learntFrom,
+      tags: [...recipe.tags],
+      servings: recipe.servings,
+      ingredients: [...recipe.ingredients],
+      steps: recipe.steps.map((s) => ({ ...s })),
+      totalTimeMin: recipe.totalTimeMin,
+      coverPhotoUrl: recipe.coverPhotoUrl,
+      coverPhotoPath: recipe.coverPhotoPath,
+      audioUrl: null,
+      audioPath: null,
+      transcript: "",
+    });
+  };
+
   return (
     <div className="flex flex-1 flex-col">
       <header className="sticky top-0 z-20 border-b border-border bg-background/90 backdrop-blur">
@@ -109,6 +131,7 @@ export function AppShell() {
           onClose={() => setSelected(null)}
           onSave={(id, draft) => updateRecipe(user!.uid, id, draft)}
           onDelete={(r) => deleteRecipe(user!.uid, r)}
+          onClone={handleClone}
         />
       )}
 

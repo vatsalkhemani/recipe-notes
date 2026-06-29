@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Trash2, Loader2 } from "lucide-react";
+import { Plus, Trash2, Loader2, ChevronUp, ChevronDown } from "lucide-react";
 import type { RecipeDraft } from "@/lib/types";
 import { deriveTotalTime } from "@/lib/types";
 import { uploadCover } from "@/lib/recipes";
@@ -45,6 +45,21 @@ export function RecipeEditor({
       "steps",
       draft.steps.map((s, idx) => (idx === i ? { ...s, ...value } : s))
     );
+
+  // Swap a step with its neighbour to reorder, and insert a blank step at any position.
+  const moveStep = (i: number, dir: -1 | 1) => {
+    const j = i + dir;
+    if (j < 0 || j >= draft.steps.length) return;
+    const steps = [...draft.steps];
+    [steps[i], steps[j]] = [steps[j], steps[i]];
+    set("steps", steps);
+  };
+
+  const insertStepAfter = (i: number) => {
+    const steps = [...draft.steps];
+    steps.splice(i + 1, 0, { text: "", durationMin: null });
+    set("steps", steps);
+  };
 
   const addTag = () => {
     const t = tagInput.trim().toLowerCase();
@@ -201,9 +216,29 @@ export function RecipeEditor({
         <div className="flex flex-col gap-3">
           {draft.steps.map((step, i) => (
             <div key={i} className="flex gap-2">
-              <span className="mt-2 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
-                {i + 1}
-              </span>
+              <div className="flex flex-col items-center gap-1">
+                <span className="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
+                  {i + 1}
+                </span>
+                <button
+                  type="button"
+                  aria-label="Move step up"
+                  disabled={i === 0}
+                  onClick={() => moveStep(i, -1)}
+                  className="rounded p-0.5 text-muted hover:bg-surface-muted disabled:opacity-30"
+                >
+                  <ChevronUp size={16} />
+                </button>
+                <button
+                  type="button"
+                  aria-label="Move step down"
+                  disabled={i === draft.steps.length - 1}
+                  onClick={() => moveStep(i, 1)}
+                  className="rounded p-0.5 text-muted hover:bg-surface-muted disabled:opacity-30"
+                >
+                  <ChevronDown size={16} />
+                </button>
+              </div>
               <div className="flex flex-1 flex-col gap-2">
                 <textarea
                   value={step.text}
@@ -227,8 +262,14 @@ export function RecipeEditor({
                     className="input w-20"
                   />
                   <span className="text-sm text-muted">minutes</span>
+                  <button
+                    type="button"
+                    onClick={() => insertStepAfter(i)}
+                    className="ml-auto flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-primary hover:bg-surface-muted"
+                  >
+                    <Plus size={14} /> below
+                  </button>
                   <RowDelete
-                    className="ml-auto"
                     onClick={() =>
                       set(
                         "steps",

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Clock, User, Pencil, Trash2, Users, ChefHat } from "lucide-react";
+import { Clock, User, Pencil, Trash2, Users, ChefHat, Copy } from "lucide-react";
 import type { Recipe, RecipeDraft } from "@/lib/types";
 import { ModalSheet } from "./modal-sheet";
 import { RecipeEditor } from "./recipe-editor";
@@ -13,6 +13,7 @@ interface RecipeDetailProps {
   onClose: () => void;
   onSave: (id: string, draft: RecipeDraft) => Promise<void>;
   onDelete: (recipe: Recipe) => Promise<void>;
+  onClone: (recipe: Recipe) => Promise<void>;
 }
 
 export function RecipeDetail({
@@ -21,6 +22,7 @@ export function RecipeDetail({
   onClose,
   onSave,
   onDelete,
+  onClone,
 }: RecipeDetailProps) {
   const [editing, setEditing] = useState(false);
   const [cooking, setCooking] = useState(false);
@@ -180,16 +182,24 @@ export function RecipeDetail({
             </details>
           )}
 
-          <button
-            onClick={() => {
-              if (confirm(`Delete "${recipe.title}"?`)) {
-                onDelete(recipe).then(handleClose);
-              }
-            }}
-            className="mt-2 flex items-center justify-center gap-2 rounded-xl border border-border py-2.5 font-medium text-muted hover:border-primary hover:text-primary"
-          >
-            <Trash2 size={16} /> Delete recipe
-          </button>
+          <div className="mt-2 flex gap-3">
+            <button
+              onClick={() => onClone(recipe).then(handleClose)}
+              className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-border py-2.5 font-medium text-muted hover:border-primary hover:text-primary"
+            >
+              <Copy size={16} /> Duplicate
+            </button>
+            <button
+              onClick={() => {
+                if (confirm(`Delete "${recipe.title}"?`)) {
+                  onDelete(recipe).then(handleClose);
+                }
+              }}
+              className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-border py-2.5 font-medium text-muted hover:border-primary hover:text-primary"
+            >
+              <Trash2 size={16} /> Delete
+            </button>
+          </div>
         </div>
       )}
     </ModalSheet>
