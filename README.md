@@ -20,6 +20,15 @@ Someone who cooks or wants to cook, learns recipes from people (family, friends)
 
 ---
 
+## Screenshots
+
+| Home grid | Recipe detail | Cook Mode |
+|---|---|---|
+| ![Recipe grid](docs/screenshots/01-grid.png) | ![Recipe detail](docs/screenshots/02-detail.png) | ![Cook Mode](docs/screenshots/03-cook-mode.png) |
+| Browse your dishes as cards with emoji, who taught you, and cook time. Search + tag filters on top. | Voice note, ingredients, and numbered steps with per-step timings. Edit anything. | Full-screen step-by-step cooking with a per-step countdown timer. |
+
+---
+
 ## Features
 
 ### Core recipe experience

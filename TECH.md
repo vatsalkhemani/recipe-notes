@@ -61,7 +61,7 @@ When you record a voice note, your phone sends the audio to the Next.js server. 
 
 ## Auth + Data: Firebase
 
-Firebase is a set of backend services from Google. This app uses three of them:
+Firebase is a set of backend services from Google. This app uses two of them:
 
 ### Firebase Authentication
 **What it does:** Handles Google sign-in. When you tap "Continue with Google", Firebase manages the entire login process — OAuth tokens, session management, everything.
@@ -69,19 +69,29 @@ Firebase is a set of backend services from Google. This app uses three of them:
 **Why Google sign-in specifically?** One tap, no password to remember, no email verification. The fastest possible path to "logged in".
 
 ### Firestore (database)
-**What it does:** Stores all your recipe data — title, ingredients, steps, who taught you, tags, etc. — as documents in a NoSQL database.
+**What it does:** Stores all your recipe data — title, ingredients, steps, who taught you, tags, and the URLs of the audio/photo files (the files themselves live in Cloudinary) — as documents in a NoSQL database.
 
 **Why Firestore?**
 - Real-time sync: when you save a recipe on your phone, it appears on your laptop without refreshing
 - Offline-first cache: recipes you've already loaded are readable even with no internet (via IndexedDB in the browser)
 - Per-user security rules: `firestore.rules` says "a logged-in user can only see their own recipes" — one file, enforced by Google's servers, not your code
 
-### Firebase Storage
-**What it does:** Stores binary files — your original voice note recordings (`.webm` or `.m4a`) and any cover photos you upload.
+> **Why not Firebase Storage for the files?** Firebase Storage is the obvious choice for audio/photos, but it now requires the Blaze (pay-as-you-go) plan, which needs a credit card on file. To keep the app genuinely free with no card, we use Cloudinary instead (below).
 
-**Why not store audio in Firestore?** Firestore is for structured text data; it has a 1MB document size limit. Audio files are often 5–30MB. Storage is built for large files.
+---
 
-**Cost:** The free tier (Spark plan) gives you 1GB storage and 10GB/month download. For personal use this is essentially infinite.
+## File Storage: Cloudinary
+
+**What it does:** Hosts the binary files — your original voice note recordings (`.webm` or `.m4a`) and any cover photos. The app uploads a file, Cloudinary stores it and returns a permanent URL, and that URL is what gets saved in Firestore.
+
+**Why Cloudinary?**
+- **Free with no credit card** — 25GB storage + 25GB/month bandwidth on the free tier, signup with just an email. This was the deciding factor over Firebase Storage.
+- Handles both audio and images (audio is uploaded under Cloudinary's "video" resource type, which also covers audio files)
+- Simple unsigned-upload model: a single upload preset lets the app upload without exposing secret keys
+
+**How it's wired:** The browser never talks to Cloudinary directly. It posts the file to our own `/api/upload` route (`src/app/api/upload/route.ts`), which forwards it to Cloudinary using the cloud name + unsigned upload preset from environment variables. This keeps the setup consistent with the rest of the app and lets us add validation/limits server-side later.
+
+**Resilience:** Audio upload is best-effort during the voice flow — if Cloudinary is unreachable, the transcription and AI-structured recipe are still kept; you just won't have the original audio attached. A failed upload never discards a good recipe.
 
 ---
 
@@ -150,9 +160,9 @@ The app uses Groq for **two separate AI calls**, both triggered by the same `GRO
 
 ## API Security
 
-The Groq API key is **server-only**. It lives in `.env.local` which is never committed to git and never bundled into the browser JavaScript. The two API routes (`/api/transcribe` and `/api/structure`) are Next.js Route Handlers that run on the server — the browser just calls `POST /api/transcribe` and gets back a transcript, never seeing the key.
+The Groq API key and Cloudinary credentials are **server-only**. They live in `.env.local` which is never committed to git and never bundled into the browser JavaScript. The three API routes (`/api/transcribe`, `/api/structure`, `/api/upload`) are Next.js Route Handlers that run on the server — the browser just calls e.g. `POST /api/transcribe` and gets back a transcript, never seeing the key.
 
-This is why the architecture has a Next.js server in the middle rather than calling Groq directly from the browser.
+This is why the architecture has a Next.js server in the middle rather than calling Groq or Cloudinary directly from the browser. (The Firebase config keys are intentionally public — that's normal for Firebase; security is enforced by the Firestore rules, not by hiding the keys.)
 
 ---
 
@@ -182,10 +192,10 @@ On iOS: Safari → Share → Add to Home Screen → gives you a home screen icon
 
 ## E2E / Preview Mode
 
-Setting `NEXT_PUBLIC_E2E_MODE=true` switches the entire data layer from Firebase to `localStorage`:
+Setting `NEXT_PUBLIC_E2E_MODE=true` switches the entire data layer from the cloud to `localStorage`:
 - Auth: fake user ("Home Cook") is injected, no Google login needed
 - Firestore: recipes stored as JSON in `localStorage`
-- Storage: audio/photos stored as base64 data URLs in `localStorage`
+- Files: audio/photos stored as base64 data URLs in `localStorage` (no Cloudinary call)
 
 This lets you run and test the full UI without any backend credentials. Used during development and for verifying features in the browser preview.
 
@@ -197,10 +207,10 @@ This lets you run and test the full UI without any backend credentials. Used dur
 |---|---|---|
 | `next` | App framework | Full-stack, App Router, PWA-friendly |
 | `react` / `react-dom` | UI library | Industry standard |
-| `firebase` | Auth + database + storage | Free tier, real-time sync, offline cache |
+| `firebase` | Auth + Firestore database | Free tier, real-time sync, offline cache |
 | `framer-motion` | Animations | Best-in-class for React, spring physics |
 | `lucide-react` | Icons | Clean, consistent, tree-shakeable |
 | `tailwindcss` | Styling | Fast iteration, consistent design tokens |
 | `vitest` | Unit tests | Fast, zero-config, same API as Jest |
 
-No other runtime dependencies. The AI calls are plain `fetch()` to Groq's API — no SDK needed.
+No other runtime dependencies. The Groq AI calls and the Cloudinary upload are plain `fetch()` requests — no extra SDKs needed.
