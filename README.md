@@ -94,29 +94,34 @@ npm install
 cp .env.local.example .env.local
 ```
 
-### 2. Firebase (5 minutes)
+### 2. Firebase — auth + database (5 minutes, free)
 1. Go to [console.firebase.google.com](https://console.firebase.google.com) → New project
 2. **Build → Authentication** → Get started → Enable **Google** sign-in
 3. **Build → Firestore Database** → Create database → Production mode
-4. **Build → Storage** → Get started
-5. **Project Settings (gear icon)** → Your apps → Add web app → copy the config
-6. Paste the 6 values into `.env.local` under the `NEXT_PUBLIC_FIREBASE_*` keys
-7. Deploy security rules (only you can read/write your recipes):
-   ```bash
-   # Install firebase CLI first if needed: npm install -g firebase-tools
-   firebase login
-   firebase use <your-project-id>
-   firebase deploy --only firestore:rules,storage
-   ```
+4. **Project Settings (gear icon)** → Your apps → Add web app → copy the config
+5. Paste the 6 values into `.env.local` under the `NEXT_PUBLIC_FIREBASE_*` keys
+6. **Firestore → Rules tab** → paste the contents of [`firestore.rules`](firestore.rules) → **Publish**
+   (this enforces "a user can only read/write their own recipes"). Production mode
+   blocks all access by default, so this step is required or saving will fail.
 
-### 3. Groq API key (2 minutes, free)
+> We use Firebase only for **Auth + Firestore** (recipe text). File storage is handled
+> by Cloudinary below, because Firebase Storage requires a billing card and Cloudinary's
+> free tier does not.
+
+### 3. Cloudinary — file storage for audio + photos (3 minutes, free, no card)
+1. Sign up at [cloudinary.com/users/register_free](https://cloudinary.com/users/register_free)
+2. Copy your **Cloud name** from the dashboard → `CLOUDINARY_CLOUD_NAME`
+3. Go to [Settings → Upload → Upload presets](https://console.cloudinary.com/settings/upload/presets) → **Add upload preset** → set **Signing mode: Unsigned** → Save
+4. Copy the preset name → `CLOUDINARY_UPLOAD_PRESET`
+
+### 4. Groq API key (2 minutes, free)
 1. Go to [console.groq.com/keys](https://console.groq.com/keys) → Create API key
 2. Paste it into `.env.local` as `GROQ_API_KEY`
 3. That's it — Groq handles both transcription and recipe structuring. **Free tier is plenty.**
 
 > **Note:** A Claude.ai or Claude Code subscription is not an API key. The Anthropic API is a separate pay-per-token product. This app uses Groq instead, which is free for personal use.
 
-### 4. Run
+### 5. Run
 ```bash
 npm run dev        # opens on http://localhost:3000
 npm run test       # unit tests (8 tests)
@@ -130,9 +135,9 @@ npm run build      # production build
 
 ---
 
-## Try it without setting up Firebase or Groq
+## Try it without setting up any backend
 
-Add `NEXT_PUBLIC_E2E_MODE=true` to `.env.local`. This logs you in as a fake user and stores everything in your browser's localStorage (audio files become embedded data URLs). You won't need Firebase or Groq at all — but the voice AI flow will show an error; just use "Type it manually" instead.
+Add `NEXT_PUBLIC_E2E_MODE=true` to `.env.local`. This logs you in as a fake user and stores everything in your browser's localStorage (audio files become embedded data URLs). You won't need Firebase, Cloudinary, or Groq at all — but the voice AI flow will show an error; just use "Type it manually" instead.
 
 This is useful for trying out the UI before committing to the setup.
 
@@ -146,6 +151,7 @@ src/
     api/
       transcribe/   ← Groq Whisper endpoint
       structure/    ← Groq LLM structuring endpoint
+      upload/       ← Cloudinary upload proxy (audio + photos)
     layout.tsx      ← root layout, PWA metadata
     page.tsx        ← auth gate
     globals.css     ← warm colour palette + Tailwind
@@ -163,14 +169,13 @@ src/
     sign-in-screen.tsx    ← sign-in page
     sw-register.tsx       ← service worker (PWA)
   lib/
-    firebase.ts     ← lazy Firebase init
-    recipes.ts      ← Firestore + Storage CRUD
+    firebase.ts     ← lazy Firebase init (Auth + Firestore)
+    recipes.ts      ← Firestore CRUD + Cloudinary upload calls
     types.ts        ← Recipe, Step interfaces + helpers
     ai-prompt.ts    ← LLM system prompt + JSON parser
     use-recorder.ts ← MediaRecorder hook
     e2e-mode.ts     ← localStorage fallback flag
-firestore.rules     ← "only you can read your recipes"
-storage.rules       ← same for audio/photo files
+firestore.rules     ← "only you can read your own recipes"
 ```
 
 ---

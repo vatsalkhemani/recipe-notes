@@ -6,19 +6,19 @@ This document explains how the app is built, what technologies were chosen, and 
 
 ## The Big Picture
 
-The app has three parts:
+The app has four parts:
 
 ```
 Your phone (browser)
-    ↓ voice recording
-Next.js server (runs locally or on Vercel)
-    ↓ text transcript + structured recipe JSON
-Groq API (AI in the cloud)
-    ↓ recipes, audio files, photos
-Firebase (Google's cloud)
+    │
+    ├─ voice recording ──→ Next.js server ──→ Groq API (transcribe + structure)
+    │                          │
+    ├─ audio / photo files ──→ Next.js server ──→ Cloudinary (file hosting)
+    │
+    └─ recipe text (+ file URLs) ──→ Firebase Firestore (database + sync)
 ```
 
-When you record a voice note, your phone sends the audio to the Next.js server. The server calls Groq to transcribe it, then calls Groq again to turn the text into a structured recipe. The final recipe (text + audio URL) is saved to Firebase so it syncs to all your devices.
+When you record a voice note, your phone sends the audio to the Next.js server. The server calls Groq to transcribe it, then calls Groq again to turn the text into a structured recipe. The original audio file is uploaded to Cloudinary (which returns a URL). The final recipe — text plus the Cloudinary URLs — is saved to Firebase Firestore so it syncs to all your devices.
 
 ---
 
