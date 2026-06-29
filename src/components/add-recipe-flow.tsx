@@ -50,7 +50,9 @@ export function AddRecipeFlow({
 
     try {
       // 1. Upload original audio so the saved recipe plays back the real note.
-      const uploadPromise = uploadAudio(user.uid, blob, ext);
+      //    Best-effort: a failed upload must not lose the transcription/recipe,
+      //    so we swallow its rejection and fall back to no audio.
+      const uploadPromise = uploadAudio(user.uid, blob, ext).catch(() => null);
 
       // 2. Transcribe.
       const form = new FormData();
@@ -68,7 +70,7 @@ export function AddRecipeFlow({
       if (!sRes.ok) throw new Error((await sRes.json()).error || "Structuring failed");
       const structured = (await sRes.json()) as StructuredRecipe;
 
-      const { url, path } = await uploadPromise;
+      const audio = await uploadPromise;
 
       setDraft({
         ...emptyDraft(),
@@ -79,8 +81,8 @@ export function AddRecipeFlow({
         servings: structured.servings,
         tags: structured.tags,
         transcript,
-        audioUrl: url,
-        audioPath: path,
+        audioUrl: audio?.url ?? null,
+        audioPath: audio?.path ?? null,
       });
       setStage("edit");
     } catch (e) {

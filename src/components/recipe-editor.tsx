@@ -58,6 +58,8 @@ export function RecipeEditor({
     try {
       const { url, path } = await uploadCover(user.uid, file);
       setDraft((d) => ({ ...d, coverPhotoUrl: url, coverPhotoPath: path }));
+    } catch {
+      alert("Couldn't upload the photo. Please try again.");
     } finally {
       setUploadingCover(false);
     }
@@ -81,6 +83,8 @@ export function RecipeEditor({
         steps: draft.steps.filter((s) => s.text.trim()),
         totalTimeMin,
       });
+    } catch {
+      alert("Couldn't save the recipe. Please check your connection and try again.");
     } finally {
       setSaving(false);
     }
